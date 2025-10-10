@@ -1,2 +1,2 @@
 # CampusSwap
-Repo for code of project "CampusSwap"
+Mã nguồn của dự án "CampusSwap"
