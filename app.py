@@ -13,6 +13,9 @@ bcrypt.init_app(app)
 JWTManager(app)
 
 app.register_blueprint(auth_bp, url_prefix='/api')
+@app.route('/')
+def index():
+    return "<h1>Chào mừng bạn đến với CampusSwap API!</h1>"
 
 if __name__ == '__main__':
     from waitress import serve
