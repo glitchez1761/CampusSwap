@@ -8,34 +8,6 @@ app = Flask(__name__)
 # Cần có SECRET_KEY để sử dụng session
 app.config['SECRET_KEY'] = 'your_very_secret_key_here'
 
-@app.route('/')
-def home():
-    # Chuyển hướng đến trang đăng nhập nếu chưa đăng nhập
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    # Nếu là admin, chuyển đến trang quản trị
-    if session.get('vai_tro') == 'admin':
-        return redirect(url_for('admin_dashboard'))
-
-    # Đối với người dùng thông thường, hiển thị trang chào mừng với nút đăng xuất
-    # Đoạn HTML này được trả về trực tiếp mà không cần file template riêng
-    ten_dang_nhap = session.get('ten_dang_nhap', 'Khách')
-    return f"""
-    <!DOCTYPE html>
-    <html lang="vi">
-    <head>
-        <meta charset="UTF-8">
-        <title>Trang chính - CampusSwap</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    </head>
-    <body class="container mt-5">
-        <h1>Chào mừng bạn, {ten_dang_nhap}!</h1>
-        <p>Bạn đã đăng nhập thành công vào CampusSwap.</p>
-        <a href="{url_for('logout')}" class="btn btn-danger">Đăng xuất</a>
-    </body>
-    </html>
-    """
 # --- CHỨC NĂNG ĐĂNG KÝ ---
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -100,6 +72,33 @@ def logout():
     session.clear()
     flash('Bạn đã đăng xuất.', 'info')
     return redirect(url_for('login'))
+
+@app.route('/')
+def home():
+    # KHÔNG CÒN KIỂM TRA ĐĂNG NHẬP Ở ĐÂY NỮA
+    # Logic lấy bài đăng sẽ được thực thi cho tất cả mọi người
+
+    # Nếu admin đã đăng nhập, vẫn chuyển hướng họ tới trang quản trị
+    if session.get('vai_tro') == 'admin':
+        return redirect(url_for('admin_dashboard'))
+
+    # --- Phần lấy dữ liệu giữ nguyên ---
+    conn = get_db_connection()
+    posts = []
+    if conn:
+        cursor = conn.cursor()
+        query = """
+            SELECT b.ID, b.TieuDe, b.NoiDung, n.TenDangNhap
+            FROM BaiDang b
+            JOIN NguoiDung n ON b.IDNguoiDung = n.ID
+            WHERE b.TrangThai = 'Đã duyệt' 
+            ORDER BY b.NgayDang DESC
+        """
+        cursor.execute(query)
+        posts = cursor.fetchall()
+        conn.close()
+    
+    return render_template('index.html', posts=posts)
 
 # --- TRANG QUẢN TRỊ VÀ XUẤT BÁO CÁO ---
 @app.route('/admin/dashboard')
